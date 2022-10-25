@@ -9,20 +9,24 @@ import android.text.TextPaint
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.paint
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -36,16 +40,55 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SharedCanvasPocTheme {
-                // A surface container using the 'background' color from the theme
+                val path = remember { Path() }
                 ConstraintLayout(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
+                        .graphicsLayer(alpha = 0.99F, clip = true)
+                        .drawWithContent {
+                            // In the real use-case this path is super complicated and
+                            //  animated based on many constantly changing variables.
+                            path.reset()
+                            path.moveTo(0F, 0F)
+                            path.relativeLineTo(0F, size.height)
+                            path.relativeLineTo(size.width, 0F)
+                            path.close()
+                            drawPath(path, brush = canvasBrush)
+
+                            drawContent()
+                        }
                 ) {
                     val (canvas, text) = createRefs()
-                    val path = remember { Path() }
                     val density = LocalDensity.current
                     val textSp = 32.sp
+
+                    val textPainter = remember {
+                        ColorPainter(color = Color.Transparent)
+                    }
+                    val xorFilter = remember {
+                        ColorFilter.tint(color = Color.Black, blendMode = BlendMode.Xor)
+                    }
+                    Text(
+                        text = "I want this\ncomposable text",
+                        modifier = Modifier
+                            .paint(
+                                painter = textPainter,
+                                colorFilter = xorFilter,
+                            )
+                            .constrainAs(text) {
+                                centerHorizontallyTo(canvas)
+                                centerVerticallyTo(canvas, bias = 0.45F)
+                                height = Dimension.preferredWrapContent.atMost(128.dp)
+                                width = Dimension.preferredWrapContent.atMost(256.dp)
+                            },
+                        color = Color.White,
+                        fontSize = textSp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 42.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Visible,
+                    )
+
                     val textSizePixels = with(density) { textSp.toPx() }
                     val textPaint = remember {
                         TextPaint().apply {
@@ -56,6 +99,7 @@ class MainActivity : ComponentActivity() {
                             color = android.graphics.Color.BLACK
                         }
                     }
+
                     Canvas(
                         modifier = Modifier
                             .constrainAs(canvas) {
@@ -64,18 +108,8 @@ class MainActivity : ComponentActivity() {
                                 width = Dimension.matchParent
                                 height = Dimension.matchParent
                             }
-                            .graphicsLayer(alpha = 0.99F, clip = true)
                     ) {
                         drawIntoCanvas { canvas ->
-                            // In the real use-case this path is super complicated and
-                            //  animated based on many constantly changing variables.
-                            path.reset()
-                            path.moveTo(0F, 0F)
-                            path.relativeLineTo(0F, canvas.nativeCanvas.height.toFloat())
-                            path.relativeLineTo(canvas.nativeCanvas.width.toFloat(), 0F)
-                            path.close()
-                            drawPath(path, brush = canvasBrush)
-
                             canvas.nativeCanvas.withTranslation(
                                 y = canvas.nativeCanvas.height * 0.51F
                             ) {
@@ -88,21 +122,6 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-
-                    Text(
-                        text = "I want this\ncomposable text",
-                        fontSize = 32.sp,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 42.sp,
-                        maxLines = 2,
-                        modifier = Modifier
-                            .constrainAs(text) {
-                                centerHorizontallyTo(canvas)
-                                centerVerticallyTo(canvas, bias = 0.45F)
-                                height = Dimension.preferredWrapContent.atMost(128.dp)
-                                width = Dimension.preferredWrapContent.atMost(256.dp)
-                            }
-                    )
                 }
             }
         }
