@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.CacheDrawScope
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.BlendMode
@@ -35,8 +36,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SharedCanvasPocTheme {
+                // Our example of XOR to clip out the pink requires we use a surface behind the
+                // layout that is providing the root graphics layer with an alpha < 1
                 Surface(color = MaterialTheme.colorScheme.background) {
-
                     ConstraintLayout(
                         modifier = Modifier
                             .fillMaxSize()
@@ -47,12 +49,13 @@ class MainActivity : ComponentActivity() {
                                     listOf(Color(0XFFD209B4), Color(0XFFD20962))
                                 )
                                 onDrawWithContent {
-                                    // Drawing the black text where the pink is
-                                    //  path is not drawn requires transparent pixels
+                                    // The color from a tint filter with a Xor blend will only show
+                                    // on top of transparent areas. otherwise it is clipped and made
+                                    // transparent.
                                     drawRect(Color.Transparent)
 
-                                    // In the real use-case this path is super complicated and
-                                    //  animated based on many constantly changing variables.
+                                    //  For attain we should need only call drawWave
+                                    //  that is currently defined in WaveAnimation.kt
                                     path.reset()
                                     path.moveTo(0F, 0F)
                                     path.relativeLineTo(0F, size.height)
@@ -80,7 +83,6 @@ class MainActivity : ComponentActivity() {
                                     blendMode = BlendMode.Xor
                                     colorFilter = ColorFilter.tint(Color(142, 142, 147, 255))
                                 },
-                            color = Color.White,
                             fontSize = 96.sp,
                             textAlign = TextAlign.Center,
                             letterSpacing = 0.2.sp,
@@ -97,7 +99,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .constrainAs(text) {
                                     centerHorizontallyTo(parent)
-                                    centerVerticallyTo(parent, bias = 0.45F)
+                                    centerVerticallyTo(parent, bias = 0.55F)
                                     height = Dimension.preferredWrapContent
                                     width = Dimension.preferredWrapContent
                                 }
@@ -105,7 +107,6 @@ class MainActivity : ComponentActivity() {
                                     blendMode = BlendMode.Xor
                                     colorFilter = ColorFilter.tint(color = Color.Black)
                                 },
-                            color = Color.White,
                             fontSize = 32.sp,
                             lineHeight = 36.sp,
                             textAlign = TextAlign.Center,
@@ -117,9 +118,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun Modifier.drawWithLayerPaint(configure: Paint.() -> Unit): Modifier {
+fun Modifier.drawWithLayerPaint(configure: Paint.(scope: CacheDrawScope) -> Unit): Modifier {
     return drawWithCache {
-        val paint = Paint().apply(configure)
+        val paint = Paint()
+        paint.configure(this)
         onDrawWithContent {
             drawContext.canvas.saveLayer(size.toRect(), paint)
             drawContent()
