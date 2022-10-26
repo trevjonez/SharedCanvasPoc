@@ -76,11 +76,11 @@ class MainActivity : ComponentActivity() {
                                     height = Dimension.preferredWrapContent
                                     width = Dimension.preferredWrapContent
                                 }
-                                .drawWithPaint {
+                                .drawWithLayerPaint {
                                     blendMode = BlendMode.Xor
-                                    colorFilter = ColorFilter.tint(color = Color.Black)
+                                    colorFilter = ColorFilter.tint(Color(142, 142, 147, 255))
                                 },
-                            color = Color(142, 142, 147, 255),
+                            color = Color.White,
                             fontSize = 96.sp,
                             textAlign = TextAlign.Center,
                             letterSpacing = 0.2.sp,
@@ -101,7 +101,7 @@ class MainActivity : ComponentActivity() {
                                     height = Dimension.preferredWrapContent
                                     width = Dimension.preferredWrapContent
                                 }
-                                .drawWithPaint {
+                                .drawWithLayerPaint {
                                     blendMode = BlendMode.Xor
                                     colorFilter = ColorFilter.tint(color = Color.Black)
                                 },
@@ -117,7 +117,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun Modifier.drawWithPaint(configure: Paint.() -> Unit): Modifier {
+fun Modifier.drawWithLayerPaint(configure: Paint.() -> Unit): Modifier {
     return drawWithCache {
         val paint = Paint().apply(configure)
         onDrawWithContent {
